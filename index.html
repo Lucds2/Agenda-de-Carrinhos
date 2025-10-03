@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Agenda Carrinhos</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        
+        background-color: #f9f9f9;
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+      table {
+  border-collapse: collapse;
+  width: 80%; /* reduz a largura total */
+  margin: 20px auto; /* centraliza a tabela */
+  font-size: 14px; /* texto um pouco menor */
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px 10px; /* menos altura e largura interna */
+  text-align: center;
+  line-height: 1.4; /* reduz altura da linha */
+}
+
+      th {
+        background-color: #f2f2f2;
+      }
+      .disponivel {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .agendado {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
+      .botoes {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.botao {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.agendar {
+  background-color: #007bff;
+  color: white;
+}
+
+.agendar:hover {
+  background-color: #0056b3;
+}
+
+.atualizar {
+  background-color: #28a745;
+  color: white;
+}
+
+.atualizar:hover {
+  background-color: #1e7e34;
+}
+
+.instrucoes {
+  width: 85%;
+  margin: 10px auto;
+  background-color: #ffffff;
+  border-left: 5px solid #007bff;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-radius: 8px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.instrucoes p {
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.instrucoes strong {
+  color: #007bff;
+}
+
+.instrucoes span{
+  color:#28a745
+}
+
+.instrucoes p:last-child {
+  font-weight: bold;
+  color: #dc3545;
+  background-color: #f8d7da;
+  padding: 10px;
+  border-radius: 6px;
+}
+#warning{
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  table {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  th, td {
+    padding: 4px 6px;
+  }
+
+  .botoes {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .botao {
+    width: 90%;
+    margin-bottom: 10px;
+  }
+
+  .instrucoes {
+    width: 95%;
+    padding: 15px;
+  }
+}
+
+
+    </style>
+
+    
+  </head>
+  <body>
+    <h1>Agenda de Carrinhos para 02/11/2025</h1>
+    <div class="instrucoes">
+  <p>
+    Verifique abaixo a disponibilidade de horários e dispositivos. Após escolher o horário disponível e o dispositivo desejado, clique no botão <strong>Agendar Horário</strong>.
+  </p>
+  <p>
+    Preencha o formulário completo, informando os nomes dos dois publicadores que irão utilizar o equipamento no horário selecionado. Depois volte a essa página e clique no botão <span><b>Atualizar Agenda</b></span>  e confira se está tudo certo. se tiver errado entre em contato com o Superintendente de Serviço.
+  </p>
+  <p id="warning">
+    ⚠️ Atenção: não agende em horários que já estejam ocupados.
+  </p>
+</div>
+
+    <div id="tabela">Carregando...</div>
+
+    <script>
+      const sheetID = "1e7Hy9LjYeTe7Kx1B4uVovItVbXzAOAIhMP3JrZazTJc";
+      const gid = "1792502708";
+
+
+      function drawTable() {
+   fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&gid=${gid}`)
+  .then(res => res.text())
+  .then(text => {
+    // Limpa a resposta para extrair o JSON corretamente
+    const jsonText = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\);/);
+    if (!jsonText || !jsonText[1]) {
+      throw new Error('Formato inesperado na resposta do Google Sheets');
+    }
+
+    const json = JSON.parse(jsonText[1]);
+    const rows = json.table.rows;
+    const cols = json.table.cols;
+
+    let html = '<table><thead><tr>';
+    cols.forEach(col => {
+      html += `<th>${col.label}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    rows.forEach(row => {
+      html += '<tr>';
+      row.c.forEach((cell, index) => {
+        let value = cell ? cell.v : '';
+        let classe = '';
+
+        // Formata a coluna Horário corretamente
+        if (index === 0 && cell && cell.f) {
+          value = cell.f;
+        }
+
+        if (value === 'Disponível') classe = 'disponivel';
+        else if (value && value.trim() !== '' && index !== 0) classe = 'agendado';
+
+        html += `<td class="${classe}">${value}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('tabela').innerHTML = `<div style="overflow-x:auto;">${html}</div>`;
+
+  })
+  .catch(err => {
+    console.error('Erro ao processar dados:', err);
+    document.getElementById('tabela').innerHTML = 'Erro ao carregar dados.';
+  });
+}
+window.addEventListener('DOMContentLoaded', drawTable);
+
+     
+
+    </script>
+
+    <div class="botoes">
+  <a href="https://forms.gle/yUNxq5MuJspkC5GR7" target="_blank" class="botao agendar">Agendar Horário</a>
+  <button onclick="drawTable()" class="botao atualizar">Atualizar Agenda</button>
+</div>
+  </body>
+</html>
